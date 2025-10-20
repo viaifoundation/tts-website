@@ -18,6 +18,7 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -47,7 +48,7 @@
             </div>
         </nav>
     </header>
-    <div id="root" class="container mx-auto px-6 py-16"></div>
+    <div id="root" class="container mx-auto px-6 py-16 max-w-4xl"></div>
     <script type="text/babel">
         const { useState, useEffect } = React;
 
@@ -61,27 +62,55 @@
             const [token, setToken] = useState("");
             const [username, setUsername] = useState("");
             const [password, setPassword] = useState("");
+            const [regUsername, setRegUsername] = useState("");
+            const [regPassword, setRegPassword] = useState("");
+            const [confirmPassword, setConfirmPassword] = useState("");
             const [language, setLanguage] = useState("en");
             const [paragraphs, setParagraphs] = useState([{ text: "", voice: voices["en"][0] }]);
             const [audioUrl, setAudioUrl] = useState("");
             const [error, setError] = useState("");
+            const [showRegister, setShowRegister] = useState(false);
 
             const handleLogin = async () => {
+                const turnstileToken = document.querySelector('.cf-turnstile-login input[name="cf-turnstile-response"]').value;
+                if (!turnstileToken) return setError("Please complete the login challenge");
                 try {
-                    const response = await fetch("https://tts.viaifoundation.org/api/token", {
+                    const response = await fetch("https://tts-api.viaifoundation.org/api/token", {
                         method: "POST",
                         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: new URLSearchParams({ username, password })
+                        body: new URLSearchParams({ username, password, 'cf-turnstile-response': turnstileToken })
                     });
                     const data = await response.json();
                     if (response.ok) {
                         setToken(data.access_token);
                         setError("");
                     } else {
-                        setError(data.detail);
+                        setError(data.detail || "Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
                     }
                 } catch (e) {
-                    setError("Login failed");
+                    setError("Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
+                }
+            };
+
+            const handleRegister = async () => {
+                if (regPassword !== confirmPassword) return setError("Passwords do not match");
+                const turnstileToken = document.querySelector('.cf-turnstile-register input[name="cf-turnstile-response"]').value;
+                if (!turnstileToken) return setError("Please complete the registration challenge");
+                try {
+                    const response = await fetch("https://tts-api.viaifoundation.org/api/register", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({ username: regUsername, password: regPassword, 'cf-turnstile-response': turnstileToken })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        setError("Registration successful! Please log in.");
+                        setShowRegister(false);
+                    } else {
+                        setError(data.detail || "Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
+                    }
+                } catch (e) {
+                    setError("Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
                 }
             };
 
@@ -98,24 +127,26 @@
             };
 
             const handleGenerateAudio = async () => {
+                const turnstileToken = document.querySelector('.cf-turnstile-generate input[name="cf-turnstile-response"]').value;
+                if (!turnstileToken) return setError("Please complete the audio generation challenge");
                 try {
-                    const response = await fetch("https://tts.viaifoundation.org/api/generate_audio", {
+                    const response = await fetch("https://tts-api.viaifoundation.org/api/generate_audio", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             "Authorization": `Bearer ${token}`
                         },
-                        body: JSON.stringify({ language, paragraphs })
+                        body: JSON.stringify({ language, paragraphs, 'cf-turnstile-response': turnstileToken })
                     });
                     const data = await response.json();
                     if (response.ok) {
                         setAudioUrl(data.file);
                         setError("");
                     } else {
-                        setError(data.detail);
+                        setError(data.detail || "Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
                     }
                 } catch (e) {
-                    setError("Audio generation failed");
+                    setError("Server is currently unavailable. Please try again later or contact support at contact@viaifoundation.org.");
                 }
             };
 
@@ -124,26 +155,76 @@
                     <h1 class="text-2xl font-bold mb-4 text-indigo-600">TTS Devotional Audio</h1>
                     {!token ? (
                         <div class="mb-4">
-                            <input
-                                type="text"
-                                placeholder="Username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                class="border p-2 w-full mb-2 rounded"
-                            />
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                class="border p-2 w-full mb-2 rounded"
-                            />
-                            <button
-                                onClick={handleLogin}
-                                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full"
-                            >
-                                Login
-                            </button>
+                            {showRegister ? (
+                                <div>
+                                    <h2 class="text-xl font-semibold mb-2">Register</h2>
+                                    <input
+                                        type="text"
+                                        placeholder="Username"
+                                        value={regUsername}
+                                        onChange={(e) => setRegUsername(e.target.value)}
+                                        class="border p-2 w-full mb-2 rounded"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={regPassword}
+                                        onChange={(e) => setRegPassword(e.target.value)}
+                                        class="border p-2 w-full mb-2 rounded"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Confirm Password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        class="border p-2 w-full mb-2 rounded"
+                                    />
+                                    <div class="cf-turnstile-register mb-2" data-sitekey="0x4AAAAAAB7sgFgraZpkUncS"></div>
+                                    <button
+                                        onClick={handleRegister}
+                                        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full mb-2"
+                                    >
+                                        Register
+                                    </button>
+                                    <button
+                                        onClick={() => setShowRegister(false)}
+                                        class="text-indigo-600 hover:underline w-full text-center"
+                                    >
+                                        Back to Login
+                                    </button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <h2 class="text-xl font-semibold mb-2">Login</h2>
+                                    <input
+                                        type="text"
+                                        placeholder="Username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        class="border p-2 w-full mb-2 rounded"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        class="border p-2 w-full mb-2 rounded"
+                                    />
+                                    <div class="cf-turnstile-login mb-2" data-sitekey="0x4AAAAAAB7sgFgraZpkUncS"></div>
+                                    <button
+                                        onClick={handleLogin}
+                                        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full mb-2"
+                                    >
+                                        Login
+                                    </button>
+                                    <button
+                                        onClick={() => setShowRegister(true)}
+                                        class="text-indigo-600 hover:underline w-full text-center"
+                                    >
+                                        Register
+                                    </button>
+                                </div>
+                            )}
                             {error && <p class="text-red-500 mt-2">{error}</p>}
                         </div>
                     ) : (
@@ -188,6 +269,7 @@
                                     Add Paragraph
                                 </button>
                             )}
+                            <div class="cf-turnstile-generate mb-2" data-sitekey="0x4AAAAAAB7sgFgraZpkUncS"></div>
                             <button
                                 onClick={handleGenerateAudio}
                                 class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full"
@@ -232,7 +314,7 @@
                 <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/medium.svg" alt="Medium" class="inline-block w-8 h-8 mx-2">
             </a>
         </div>
-        <p class="mt-4">© 2025 VI AI Foundation. All rights reserved. 501(c)(3) nonprofit charity in Saratoga, CA.</p>
+        <p class="mt-4">© 2025 VI AI Foundation, a 501(c)(3) nonprofit charity in Saratoga, CA. All rights reserved.</p>
         <p class="mt-2"><a href="https://viaifoundation.org/privacy.html" class="text-indigo-400 hover:underline">Privacy Policy</a></p>
     </footer>
     <script>
