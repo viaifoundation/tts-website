@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VI AI Foundation TTS Devotional Audio - Generate audio for Bible devotionals in multiple languages.">
+    <title>VI AI Foundation - TTS Devotional Audio</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/assets/favicon-32x32.png" sizes="32x32">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PRGF9J964B"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-PRGF9J964B');
+    </script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .social-media-links img { width: 32px; height: 32px; margin: 0 8px; vertical-align: middle; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="/assets/logo.png" alt="VI AI Foundation Logo" class="h-10 mr-2">
+                <h1 class="text-xl font-bold text-indigo-600">VI AI Foundation TTS</h1>
+            </div>
+            <button id="menu-toggle" class="md:hidden text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <div id="menu" class="hidden md:block space-x-6">
+                <a href="https://viaifoundation.org" class="text-gray-600 hover:text-indigo-600">Home</a>
+                <a href="https://viaifoundation.org/about.html" class="text-gray-600 hover:text-indigo-600">About</a>
+                <a href="https://viaifoundation.org/team.html" class="text-gray-600 hover:text-indigo-600">Team</a>
+                <a href="https://viaifoundation.org/confessions.html" class="text-gray-600 hover:text-indigo-600">Confessions</a>
+                <a href="https://viaifoundation.org/ministries.html" class="text-gray-600 hover:text-indigo-600">Ministries</a>
+                <a href="https://viaifoundation.org/events.html" class="text-gray-600 hover:text-indigo-600">Events</a>
+                <a href="https://viaifoundation.org/contact.html" class="text-gray-600 hover:text-indigo-600">Contact</a>
+            </div>
+        </nav>
+    </header>
+    <div id="root" class="container mx-auto px-6 py-16 max-w-4xl"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const voices = {
+            "en": ["en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural", "en-US-EricNeural", "en-US-SaraNeural"],
+            "zh-CN": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-CN-YunyangNeural", "zh-CN-XiaoyiNeural", "zh-CN-YunjianNeural"],
+            "zh-TW": ["zh-TW-HsiaoYuNeural", "zh-TW-YunJheNeural", "zh-TW-HsiaoChenNeural", "zh-TW-YunZeNeural", "zh-TW-XiaoMinNeural"]
+        };
+
+        function App() {
+            const [token, setToken] = useState("");
+            const [username, setUsername] = useState("");
+            const [password, setPassword] = useState("");
+            const [language, setLanguage] = useState("en");
+            const [paragraphs, setParagraphs] = useState([{ text: "", voice: voices["en"][0] }]);
+            const [audioUrl, setAudioUrl] = useState("");
+            const [error, setError] = useState("");
+
+            const handleLogin = async () => {
+                try {
+                    const response = await fetch("https://tts.viaifoundation.org/api/token", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({ username, password })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        setToken(data.access_token);
+                        setError("");
+                    } else {
+                        setError(data.detail);
+                    }
+                } catch (e) {
+                    setError("Login failed");
+                }
+            };
+
+            const handleAddParagraph = () => {
+                if (paragraphs.length < 5) {
+                    setParagraphs([...paragraphs, { text: "", voice: voices[language][0] }]);
+                }
+            };
+
+            const handleParagraphChange = (index, field, value) => {
+                const newParagraphs = [...paragraphs];
+                newParagraphs[index][field] = value;
+                setParagraphs(newParagraphs);
+            };
+
+            const handleGenerateAudio = async () => {
+                try {
+                    const response = await fetch("https://tts.viaifoundation.org/api/generate_audio", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ language, paragraphs })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        setAudioUrl(data.file);
+                        setError("");
+                    } else {
+                        setError(data.detail);
+                    }
+                } catch (e) {
+                    setError("Audio generation failed");
+                }
+            };
+
+            return (
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h1 class="text-2xl font-bold mb-4 text-indigo-600">TTS Devotional Audio</h1>
+                    {!token ? (
+                        <div class="mb-4">
+                            <input
+                                type="text"
+                                placeholder="Username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                class="border p-2 w-full mb-2 rounded"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                class="border p-2 w-full mb-2 rounded"
+                            />
+                            <button
+                                onClick={handleLogin}
+                                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full"
+                            >
+                                Login
+                            </button>
+                            {error && <p class="text-red-500 mt-2">{error}</p>}
+                        </div>
+                    ) : (
+                        <div>
+                            <select
+                                value={language}
+                                onChange={(e) => {
+                                    setLanguage(e.target.value);
+                                    setParagraphs(paragraphs.map(p => ({ ...p, voice: voices[e.target.value][0] })));
+                                }}
+                                class="border p-2 mb-4 rounded w-full"
+                            >
+                                <option value="en">English</option>
+                                <option value="zh-CN">Simplified Chinese</option>
+                                <option value="zh-TW">Traditional Chinese</option>
+                            </select>
+                            {paragraphs.map((para, index) => (
+                                <div key={index} class="mb-4">
+                                    <textarea
+                                        value={para.text}
+                                        onChange={(e) => handleParagraphChange(index, "text", e.target.value)}
+                                        placeholder={`Paragraph ${index + 1}`}
+                                        class="border p-2 w-full mb-2 rounded"
+                                        rows="4"
+                                    />
+                                    <select
+                                        value={para.voice}
+                                        onChange={(e) => handleParagraphChange(index, "voice", e.target.value)}
+                                        class="border p-2 w-full rounded"
+                                    >
+                                        {voices[language].map(voice => (
+                                            <option key={voice} value={voice}>{voice}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                            {paragraphs.length < 5 && (
+                                <button
+                                    onClick={handleAddParagraph}
+                                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 w-full"
+                                >
+                                    Add Paragraph
+                                </button>
+                            )}
+                            <button
+                                onClick={handleGenerateAudio}
+                                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full"
+                            >
+                                Generate Audio
+                            </button>
+                            {audioUrl && (
+                                <div class="mt-4">
+                                    <audio controls src={audioUrl} class="w-full"></audio>
+                                </div>
+                            )}
+                            {error && <p class="text-red-500 mt-2">{error}</p>}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+    <footer class="bg-gray-800 text-white py-6 text-center">
+        <div class="social-media-links">
+            <a href="https://x.com/viaifoundation" target="_blank" title="Follow us on X">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/x.svg" alt="X" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://www.youtube.com/@viaifoundation" target="_blank" title="Subscribe on YouTube">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/youtube.svg" alt="YouTube" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://www.facebook.com/viaifoundation" target="_blank" title="Like us on Facebook">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/facebook.svg" alt="Facebook" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://www.linkedin.com/company/viaifoundation" target="_blank" title="Connect on LinkedIn">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/linkedin.svg" alt="LinkedIn" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://www.tiktok.com/@viaifoundation" target="_blank" title="Follow us on TikTok">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/tiktok.svg" alt="TikTok" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://www.instagram.com/viaifoundation" target="_blank" title="Follow us on Instagram">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/instagram.svg" alt="Instagram" class="inline-block w-8 h-8 mx-2">
+            </a>
+            <a href="https://medium.com/@viaifoundation" target="_blank" title="Read our blog on Medium">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v13.7.0/icons/medium.svg" alt="Medium" class="inline-block w-8 h-8 mx-2">
+            </a>
+        </div>
+        <p class="mt-4">© 2025 VI AI Foundation. All rights reserved. 501(c)(3) nonprofit charity in Saratoga, CA.</p>
+        <p class="mt-2"><a href="https://viaifoundation.org/privacy.html" class="text-indigo-400 hover:underline">Privacy Policy</a></p>
+    </footer>
+</body>
+</html>
