@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="VI AI Foundation TTS Devotional Audio - Generate audio for Bible devotionals in multiple languages.">
     <title>VI AI Foundation - TTS Devotional Audio</title>
-    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
-    <link rel="icon" type="image/png" href="/assets/favicon-16x16.png" sizes="16x16">
-    <link rel="icon" type="image/png" href="/assets/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/x-icon" href="https://tts-cdn.viaifoundation.org/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="https://tts-cdn.viaifoundation.org/assets/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="https://tts-cdn.viaifoundation.org/assets/favicon-32x32.png" sizes="32x32">
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-PRGF9J964B"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -28,7 +28,7 @@
     <header class="bg-white shadow-md">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center">
-                <img src="/assets/logo.png" alt="VI AI Foundation Logo" class="h-10 mr-2">
+                <img src="https://tts-cdn.viaifoundation.org/assets/logo.png" alt="VI AI Foundation Logo" class="h-10 mr-2">
                 <h1 class="text-xl font-bold text-indigo-600">VI AI Foundation TTS</h1>
             </div>
             <button id="menu-toggle" class="md:hidden text-gray-600">
@@ -47,7 +47,7 @@
             </div>
         </nav>
     </header>
-    <div id="root" class="container mx-auto px-6 py-16 max-w-4xl"></div>
+    <div id="root" class="container mx-auto px-6 py-16"></div>
     <script type="text/babel">
         const { useState, useEffect } = React;
 
@@ -235,5 +235,10 @@
         <p class="mt-4">© 2025 VI AI Foundation. All rights reserved. 501(c)(3) nonprofit charity in Saratoga, CA.</p>
         <p class="mt-2"><a href="https://viaifoundation.org/privacy.html" class="text-indigo-400 hover:underline">Privacy Policy</a></p>
     </footer>
+    <script>
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.getElementById('menu').classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>
